@@ -12,7 +12,30 @@ class Point:
     def move(self):
         self.x += self.wx
         self.y += self.wy
+    def moveBack(self):
+        self.x -= self.wx
+        self.y -= self.wy
     
+def calculateRange(points):
+    minX = min(points, key=lambda x: x.x).x
+    minY = min(points, key=lambda x: x.y).y
+
+    maxX = max(points, key=lambda x: x.x).x
+    maxY = max(points, key=lambda x: x.y).y
+    
+    return (minX, minY, maxX, maxY)
+    
+def printAsImage(points, name):
+    minX, minY, maxX, maxY = calculateRange(points)
+    
+    img = Image.new('L', (maxX+1-minX, maxY+1-minY))
+    for p in points:
+        px = p.x - minX
+        py = p.y - minY
+        img.putpixel((px, py), 255)
+        #draw = ImageDraw.Draw(img)
+        #draw.ellipse((px-2, py-2, px+2, py+2), fill = 'white', outline ='white')
+    img.save(name+'.png')
 
 points = list()
 
@@ -22,32 +45,25 @@ with open("input.txt", "r") as lines:
         if matches:
             points.append(Point(int(matches.group(1)), int(matches.group(2)), int(matches.group(3)), int(matches.group(4))))
         
-minX = min(points, key=lambda x: x.x).x
-minY = min(points, key=lambda x: x.y).y
-
-maxX = max(points, key=lambda x: x.x).x
-maxY = max(points, key=lambda x: x.y).y
+minX, minY, maxX, maxY = calculateRange(points)
 
 print("minX "+str(minX))
 print("maxX "+str(maxX))
 print("minY "+str(minY))
 print("maxY "+str(maxY))
 
-print(len(points))
+lastWidth = maxX - minX
 
-#cca -50 000 to 50 000 => platno pre -100 000 : 100 000 => takze 2000x2000
 for i in range(1000000):
     for p in points:
         p.move()
-    if i%500 == 0:
-        img = Image.new('L', (2000, 2000))
+    minX, minY, maxX, maxY = calculateRange(points)
+    if lastWidth < (maxX - minX):
+        printAsImage(points, "result-"+str(i))
         for p in points:
-            #img.putpixel((int(p.x/100) + 1000, int(p.y/100) + 1000), 255)
-            px = int(p.x/100) + 1000
-            py = int(p.y/100) + 1000
-            
-            draw = ImageDraw.Draw(img)
-            draw.ellipse((px-2, py-2, px+2, py+2), fill = 'white', outline ='white')
-        img.save('step'+str(int(i))+'.png')
-        print(i)
+            p.moveBack()
+        printAsImage(points, "result2-"+str(i))
+        break
+        
+    lastWidth = maxX - minX
 
