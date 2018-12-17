@@ -1,5 +1,8 @@
 class EndOfGameException(Exception):
     pass
+    
+class DeadElf(Exception):
+    pass
 
 class Cell: 
     def __init__(self, x, y, wall):
@@ -44,9 +47,9 @@ class Cell:
             return self.unit.type
         
 class Unit:
-    def __init__(self, type):
+    def __init__(self, type, power):
         self.hitPoints = 200
-        self.attack = 3
+        self.attack = power
         self.type = type
         self.position = None
     def moveTo(self, cell):
@@ -154,69 +157,75 @@ class Unit:
         if self.hitPoints <= 0:
             units.remove(self)
             self.position.unit = None
+            if self.type == "E":
+                raise DeadElf()
     def calcOrder(self):
         return self.position.calcOrder()
     def __str__(self):
         return "u_"+self.type+"["+str(self.position.x)+","+str(self.position.y)+"]"
 
-cave = list()
-units = list()
-NoneCell = Cell(9999,9999, True)
-Debug = False
-
 def findEnemies(type):
     return [u for u in units if u.type != type]
 
-with open("input.txt", "r") as file:
-    for line in file:
-        row = list()
-        for p in line:
-            if p == "\n":
-                pass
-            elif p == " ":
-                break
-            else:
-                cell = Cell(len(row), len(cave), p == "#")
-                row.append(cell)
-                if not(p == "#" or p == "."):
-                    unit = Unit(p)
-                    units.append(unit)
-                    unit.moveTo(cell)
-        cave.append(row)
-        
-for row in cave:
-    for cell in row:
-        print(cell, end="")
-    print()
+for power in range(4, 100):
+    cave = list()
+    units = list()
+    NoneCell = Cell(9999,9999, True)
+    Debug = False
 
-fullRoundCompleted = 0
-try:
-    while True:
-        units.sort(key=lambda u:u.calcOrder())
-        tempUnits = list([u for u in units])
-        for unit in tempUnits:  
-            if unit.hitPoints > 0:
-                unit.step()
-        print("After "+str(fullRoundCompleted+1)+" round")
-        for row in cave:
-            for cell in row:
-                print(cell, end="")
-            for cell in row:
-                if cell.unit != None:
-                    print("\t"+str(cell.unit.type)+"("+str(cell.unit.hitPoints)+")", end="")
-            print()
-        fullRoundCompleted += 1
-        #if fullRoundCompleted == 1:
-        #    Debug = True
-except Exception:
-    print("Last state")
+
+    with open("input.txt", "r") as file:
+        for line in file:
+            row = list()
+            for p in line:
+                if p == "\n":
+                    pass
+                elif p == " ":
+                    break
+                else:
+                    cell = Cell(len(row), len(cave), p == "#")
+                    row.append(cell)
+                    if not(p == "#" or p == "."):
+                        unit = Unit(p, power if p == "E" else 3)
+                        units.append(unit)
+                        unit.moveTo(cell)
+            cave.append(row)
+            
     for row in cave:
         for cell in row:
             print(cell, end="")
         print()
-    
-    sumOfHitpoints = sum([u.hitPoints for u in units])
-    print("Sum of hitpoints: "+str(sumOfHitpoints))
-    print(fullRoundCompleted * sumOfHitpoints) 
-    raise
-    
+
+    fullRoundCompleted = 0
+    try:
+        while True:
+            units.sort(key=lambda u:u.calcOrder())
+            tempUnits = list([u for u in units])
+            for unit in tempUnits:  
+                if unit.hitPoints > 0:
+                    unit.step()
+            print("After "+str(fullRoundCompleted+1)+" round")
+            for row in cave:
+                for cell in row:
+                    print(cell, end="")
+                for cell in row:
+                    if cell.unit != None:
+                        print("\t"+str(cell.unit.type)+"("+str(cell.unit.hitPoints)+")", end="")
+                print()
+            fullRoundCompleted += 1
+            #if fullRoundCompleted == 1:
+            #    Debug = True
+    except EndOfGameException:
+        print("Last state")
+        for row in cave:
+            for cell in row:
+                print(cell, end="")
+            print()
+        
+        sumOfHitpoints = sum([u.hitPoints for u in units])
+        print("Sum of hitpoints: "+str(sumOfHitpoints))
+        print(fullRoundCompleted * sumOfHitpoints) 
+        raise
+    except DeadElf:
+        print(str(power)+" is not enough")
+        
