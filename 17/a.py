@@ -1,5 +1,10 @@
 import re
+import sys
+from PIL import Image, ImageDraw
 regex = r"(\w)=(\d+), \w=(\d+)\.\.(\d+)"
+
+def eprint(*args, **kwargs):
+    print(*args, file=sys.stderr, **kwargs)
 
 clay = list()
 with open("input.txt", "r") as file:
@@ -16,6 +21,7 @@ with open("input.txt", "r") as file:
                     
 minX = min(clay, key=lambda e: e[0])[0]-1
 maxX = max(clay, key=lambda e: e[0])[0]+1
+minY = min(clay, key=lambda e: e[1])[1]-1
 maxY = max(clay, key=lambda e: e[1])[1]
 
 matrix = [["." for i in range(minX, maxX+2)] for j in range(maxY+1)]
@@ -63,17 +69,26 @@ while len(toProcess) > 0:
             ##am i blocked from both sides?
             block1 = False
             block2 = False
-            for s in range(0, cell[0]):
+            
+            s = cell[0]-1
+            while s > 0 and matrix[cell[1]+i][s] != ".":
                 if matrix[cell[1]+i-1][s] != ".":
                     block1 = True
+                    break
+                s -= 1
 
-            for s in range(cell[0]+1, len(matrix[0])):
+            s = cell[0]+1
+            while s < len(matrix[0]) and matrix[cell[1]+i][s] != ".":
                 if matrix[cell[1]+i-1][s] != ".":
                     block2 = True
+                    break
+                s += 1
+             
+            #eprint([block1, block2])
             if not(block1 and block2):
                 cell = toProcess.pop()
                 cell = toProcess.pop()
-                while len(toProcess) > 0:
+                while matrix[cell[1]+1][cell[0]] != "." and len(toProcess) > 0:
                     cell = toProcess.pop()
                 if len(toProcess) > 0:
                     toProcess.append(cell)
@@ -104,13 +119,28 @@ while len(toProcess) > 0:
 #        for c in row:
 #            print(c, end="")
 #        print()
-water = 0
+
+for row in matrix:
+    startIndex = -1
+    for i in range(1, len(row)-2):
+        if row[i] == ".":
+            startIndex = -1
+        if row[i] == "|" and row[i-1] == "#":
+            startIndex = i
+        if row[i] == "|" and row[i+1] == "#" and startIndex > 1:
+            for j in range(startIndex, i+1):
+                row[j] = "~"
+water1 = 0
+water2 = 0
 for row in matrix:
     for c in row:
         if c == "|":
-            water += 1
+            water1 += 1
+        if c == "~":
+            water2 += 1
             
-print(water)
+eprint(water1 + water2 - minY)
+eprint(water2)
 
 print()
 print()    
@@ -118,3 +148,23 @@ for row in matrix:
     for c in row:
         print(c, end="")
     print()
+    
+y = 0
+img = Image.new('RGB', (len(matrix[0])*5, len(matrix)*5))
+for row in matrix:
+    x = 0
+    for c in row:
+        color = (0, 0, 0)
+        if c == "~":
+            color = (0, 0, 255)
+        if c == "|":
+            color = (255, 255, 255)
+        if c == "#":
+            color = (255, 182, 193)
+        
+        for aa in range(4):
+            for bb in range(4):
+                img.putpixel((x*5+aa, y*5+bb), color)
+        x += 1
+    y += 1
+img.save('result3.png')
