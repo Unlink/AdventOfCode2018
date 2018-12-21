@@ -113,12 +113,19 @@ print("Executing program")
 
 cpu = [0, 0, 0, 0, 0, 0]
 ip = 0
-last = 0
+r0Values = list()
+
 while ip >= 0 and ip < len(program):
     cpu[ipr] = ip
     program[ip][0].executeArry(cpu, program[ip][1])
-    print(program[ip][0].name + " " + " ".join([str(x) for x in program[ip][1]]) + "\t" + str(cpu))
+    #print(program[ip][0].name + " " + " ".join([str(x) for x in program[ip][1]]) + "\t" + str(cpu))
     ip = cpu[ipr]
     ip += 1
-    
+    if ip == 28:
+        if cpu[5] in r0Values:
+            print(r0Values)
+            print(cpu[5])
+            break
+        r0Values.append(cpu[5])
+        print(str(len(r0Values))+":"+str(cpu[5]))
 print("Cpu state: "+str(cpu))
