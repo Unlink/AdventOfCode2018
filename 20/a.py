@@ -9,6 +9,7 @@ class Cell:
         self.y = y
         #up, left, down, right
         self.doors = [False, False, False, False]
+        self.distance = 9999
         
     def getPosition(self):
         return (self.x, self.y)
@@ -38,40 +39,6 @@ class Map:
             self.cells[(x,y)] = Cell(x,y,self)
         return self.cells[(x,y)]
         
-class Branhes:
-    def __init__(self, cell, restOfPath, steps):
-        self.cell = cell
-        self.branches = list()
-        self.steps = steps
-        #scan for branches
-        temp = ""
-        phatenties = 0
-        for c in restOfPath:
-            if c == '|' and phatenties == 0:
-                self.branches.append(temp)
-                temp = ""
-            elif c == '(':
-                phatenties += 1
-                temp += c
-            elif c == ')' and phatenties > 0:
-                phatenties -= 1
-                temp += c
-            elif c == ')' and phatenties == 0:
-                self.branches.append(temp)
-                temp = ""
-            else:
-                temp += c
-        for i in range(len(self.branches)):
-            self.branches[i] += temp
-            
-    def getBranch(self):
-        if self.hasMoreBranches():
-            return self.branches.pop()
-        else:   
-            return None
-    def hasMoreBranches(self):
-        return len(self.branches) > 0
-        
 dToI = {
     'N': 0,
     'W': 1,
@@ -86,25 +53,36 @@ path = regex[1:-1]
 
 mapa = Map()
 room = mapa.getCell(0,0)
-branchStack = list()
-branchStack.append(Branhes(room, path+")", 0))
-steps = 0
 
-while len(branchStack) > 0:
-    branch = branchStack.pop()
-    if branch.hasMoreBranches():
-        branchStack.append(branch)
-        path = branch.getBranch()
-        room = branch.cell
-        for i in range(len(path)):
-            if path[i] == "(":
-                branchStack.append(Branhes(room, path[i+1:], 0))
-                break
-            else:
-                room = room.goTo(dToI[path[i]])
-    
-        
-        
+branches = list()           
+for c in path:
+    if c == '|':
+        room = branches[-1]
+    elif c == '(':
+        branches.append(room)
+    elif c == ')':
+        branches.pop()
+    else:
+        room = room.goTo(dToI[c])
+         
+mapa.getCell(0,0).distance = 0
+toProcess = [mapa.getCell(0,0)]
+
+maxDistance = 0
+maxDistanceCell = None
+
+while len(toProcess) > 0:
+    room = toProcess.pop(0)
+    for i in range(4):
+        if room.doors[i] and room.getNeighbour(i).distance > room.distance + 1:
+            room.getNeighbour(i).distance = room.distance + 1
+            toProcess.append(room.getNeighbour(i))
+            if maxDistance < room.getNeighbour(i).distance:
+                maxDistance = room.getNeighbour(i).distance
+                maxDistanceCell = room.getNeighbour(i)
+
+
+
 print((room.x, room.y, room.doors))
 
 minX = min([i[0] for i in mapa.cells.keys()])
@@ -113,6 +91,14 @@ minY = min([i[1] for i in mapa.cells.keys()])
 maxY = max([i[1] for i in mapa.cells.keys()])
 
 print((minX, maxX, minY, maxY))
+print("Max distance: "+str(maxDistance))
+
+counter = 0
+for i in range(minY, maxY+1):
+    for j in range(minX, maxX+1):
+        if mapa.getCell(j,i).distance >= 1000:
+            counter += 1
+print("Max distance longer than 1000: "+str(counter))           
 
 for i in range(minY, maxY+1):
     for j in range(minX, maxX+1):
